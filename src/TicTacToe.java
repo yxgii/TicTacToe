@@ -27,23 +27,36 @@ public class TicTacToe {
             display.append("|\n");
         }
         display.append("  ").append("-".repeat(size * 2 + 1)).append("\n  ");
-        for (int m = 0; m < size; m++){
-            display.append(" ").append(m + 1);  //kolomnummers toevoegen
+        for (int m = 1; m <= size; m++){
+            display.append(" ").append(m);  //kolomnummers toevoegen
 
         }
         System.out.println(display);
     }
 
-    // checken of een zet geldig is of niet
-    public boolean allowsMove(int col){
-        if (!(0 <= col && col < board[0].length)){
-            return false;
-        }
-        if (board[0][col].equals(" ")){
-            return true;
-        }
-        else return false;
+    // Methode om te checken of een positie geldig is
+    private boolean isValidPosition(int row, int col) {
+        return row >= 0 && row < size && col >= 0 && col < size;
     }
+
+    // Methode om een string zoals "A1" naar rijen en kolommen te converteren
+    public int[] getPosition(String move) {
+        int row = move.charAt(0) - 'A';
+        int col = Integer.parseInt(move.substring(1)) - 1;
+        return new int[] {row, col};
+    }
+
+    // Methode om een positie (rij en kolom) om te zetten naar een string zoals "A1"
+    public String getMove(int[] position){
+        int row = position[0];
+        int col = position[1];
+
+        char rowChar = (char) ('A' + row);
+        int colNumber = col + 1;
+
+        return "" + rowChar + colNumber;
+    }
+
 
     // functie checkt of het speelbord vol is
     public boolean isFull(){
@@ -59,18 +72,57 @@ public class TicTacToe {
 
     //een set toevoegen
     public boolean AddMove(String move, String player){
-        int row = move.charAt(0) - 'A';  // zet om naar rijen met gebruik van ascii waardes
-        int col = Integer.parseInt(move.substring(1)) - 1;
-        if (row >= 0 && row < size && col >= 0 && col < size && board[row][col].equals(" ")){
+        int[] pos = getPosition(move);
+        int row = pos[0];
+        int col = pos[1];
+
+        if (isValidPosition(row, col) && board[row][col].equals(" ")){
             board[row][col] = player;  // zet toevoegen
             return true;
         }
         return false; // ongeldige zet
     }
 
+    // een set verwijderen
+    public boolean delMove(String move){
+        int[] pos = getPosition(move);
+        int row = pos[0];
+        int col = pos[1];
+
+        if (isValidPosition(row, col) && !board[row][col].equals(" ")){
+            board[row][col] = " ";
+            return true;
+        }
+        return false; // ongeldige zet om te verwijderen
+    }
+
+    // Kijken of een zet is om te winnen
+    public List<String> moveToWin(String player){
+        List<String> winlist = new ArrayList<>();
+
+        for (int i = 0; i < size; i++){
+            for (int j = 0; j < size; j++){
+                if (board[i][j].equals(" ")){
+                    String move = getMove(new int[]{i,j});
+                    AddMove(move, player);
+                    if (checkWin(player)){
+                        winlist.add(move);
+                        delMove(move);
+                    }
+                    delMove(move);
+                }
+            }
+        }
+        return winlist;
+    }
+
     // functie voor de ai move
     public boolean AiMove(String player) {
-        // List<String> keuzes = Arrays.asList("A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3");
+        List<String> winlist = moveToWin(player); //verkrijg de winnende zetten
+        if (!winlist.isEmpty()){
+            String winningMove = winlist.getFirst();
+            AddMove(winningMove, player);  // maak de winnende zet
+        }
 
         // Lijst van lege posities verzamelen
         List<String> legePosities = new ArrayList<>();
@@ -93,16 +145,14 @@ public class TicTacToe {
         Random random = new Random();
         String randomkeuze = legePosities.get(random.nextInt(legePosities.size()));
 
-        // Vertraing toevoegen voordat de computer een zet maakt
+        // Vertraging toevoegen voordat de computer een zet maakt
         System.out.println("Computer denkt na...");
         try {
-            Thread.sleep(2000); // 2 seconden wachten
+            Thread.sleep(1000); // 2 seconden wachten
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // interupt flag resetten als er een onderbreking is
             System.out.println("Fout: De vertraging is onderbroken.");
         }
-
-
 
 
         // Voeg de willekeurige zet toe aan het bord
@@ -115,8 +165,8 @@ public class TicTacToe {
 
     public boolean checkWin(String player){
         // rijen controleren
-        for (int i = 0; i < board.length; i++){
-            if (board[i][0].equals(player) && board[i][1].equals(player) && board[i][2].equals(player)){
+        for (String[] row : board) {
+            if (row[0].equals(player) && row[1].equals(player) && row[2].equals(player)) {
                 return true;
             }
         }
@@ -174,7 +224,7 @@ public class TicTacToe {
             if (game.AddMove(keuze, player)){
                 game.printBoard();
                 if (game.checkWin(player)){
-                    System.out.printf("Jij hebt gewonnen!\n", player);
+                    System.out.println("Jij hebt gewonnen!\n");
                     break;
                 }
 
